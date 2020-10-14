@@ -1,0 +1,97 @@
+﻿@page "/auth/login"
+@layout AuthLayout
+@inject AuthenticationService authenticationService
+@inject NavigationManager navMan
+@inject ILocalStorageService localStorageService
+@inject AuthenticationStateProvider authStateProvider
+
+
+<h2>Welcome to PlannerApp</h2>
+<div class="row">
+    <div class="col-12">
+        <h3>Login to your account</h3>
+        <AlertMessage Message=@strMessage MessageType=@alertMessageEnum></AlertMessage>
+        <EditForm Model="@model" OnValidSubmit="LoginUser">
+            <RadzenCard>
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <label>Email</label>
+                <RadzenTextBox @bind-Value="model.Email"></RadzenTextBox>
+                <label>Password</label>
+                <RadzenPassword @bind-Value="model.Password"></RadzenPassword>
+
+                <hr />
+                <RadzenButton ButtonType="Radzen.ButtonType.Submit" Text="Login"
+                              ButtonStyle="Radzen.ButtonStyle.Secondary" class="btn-block mr-2"
+                              Disabled=@isBusy />
+
+                <RadzenButton ButtonType="Radzen.ButtonType.Button" Text="Register"
+                              ButtonStyle="Radzen.ButtonStyle.Primary" class="btn-block mr-2"
+                              Disabled=@isBusy Click="GotoRegister" />
+
+
+            </RadzenCard>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private LoginRequest model = new LoginRequest();
+
+    private string strMessage = string.Empty;
+    private AlertMessageEnum alertMessageEnum = AlertMessageEnum.Success;
+    private bool isBusy;
+    //private Dictionary<string, string> userInfo = new Dictionary<string, string>();
+
+    private async Task LoginUser()
+    {
+        isBusy = true;
+        var response = await authenticationService.LoginUserAsync(model);
+
+        //await Task.Delay(2000);
+
+        if (response.IsSuccess)
+        {
+            //strMessage = response.Message;
+            //userInfo = response.UserInfo;
+            //alertMessageEnum = AlertMessageEnum.Success;
+
+            var localUserInfo = new PlannerAppClient.Models.LocalUserInfo
+            {
+                AccessToken = response.Message,
+                Email = response.UserInfo["Email"],
+                FirstName = response.UserInfo["FirstName"],
+                LastName = response.UserInfo["LastName"],
+                Id = response.UserInfo[System.Security.Claims.ClaimTypes.NameIdentifier],
+            };
+
+            await localStorageService.SetItemAsync("User", localUserInfo);
+
+            await authStateProvider.GetAuthenticationStateAsync();
+
+            //to home page
+            navMan.NavigateTo("/");
+        }
+        else
+        {
+
+
+            strMessage = response.Message;
+
+            alertMessageEnum = AlertMessageEnum.Warning;
+        }
+
+
+        //Console.WriteLine("Hello");
+
+        isBusy = false;
+
+
+    }
+
+    private void GotoRegister()
+    {
+        navMan.NavigateTo("/auth/register");
+    }
+}

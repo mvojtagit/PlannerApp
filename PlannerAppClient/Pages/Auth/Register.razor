@@ -1,0 +1,83 @@
+﻿@page "/auth/register"
+@layout AuthLayout
+@inject AuthenticationService authenticationService
+@inject NavigationManager navMan
+
+<h2>Welcome to PlannerApp</h2>
+<div class="row">
+    <div class="col-12">
+        <h3>Create a new account</h3>       
+
+        <AlertMessage Message=@strMessage MessageType=@alertMessageEnum></AlertMessage>
+        <EditForm Model="@model" OnValidSubmit="RegisterUser">
+            <RadzenCard>
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+                <label>First Name</label>
+                <RadzenTextBox @bind-Value="model.FirstName"></RadzenTextBox>
+                <label>Last Name</label>
+                <RadzenTextBox @bind-Value="model.LastName"></RadzenTextBox>
+                <label>Email</label>
+                <RadzenTextBox @bind-Value="model.Email"></RadzenTextBox>
+                <label>Password</label>
+                <RadzenPassword @bind-Value="model.Password"></RadzenPassword>
+                <label>Confirm Password</label>
+                <RadzenPassword @bind-Value="model.ConfirmPassword"></RadzenPassword>
+                <hr />
+                <RadzenButton ButtonType="Radzen.ButtonType.Submit" Text="Register"
+                              ButtonStyle="Radzen.ButtonStyle.Primary" class="btn-block mr-2"
+                              Disabled=@isBusy />
+
+                <RadzenButton ButtonType="Radzen.ButtonType.Button" Text="Login"
+                              ButtonStyle="Radzen.ButtonStyle.Secondary" class="btn-block mr-2"
+                              Disabled=@isBusy Click="GotoLogin" />
+            </RadzenCard>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private RegisterRequest model = new RegisterRequest();
+
+    private string strMessage = string.Empty;
+    private AlertMessageEnum alertMessageEnum =AlertMessageEnum.Success;
+    private bool isBusy;
+
+    private async Task RegisterUser()
+    {
+        //strMessage = "Hello";
+        //alertMessageEnum = AlertMessageEnum.Warning;
+
+
+
+        isBusy = true;
+        var response=await authenticationService.RegisterUserAsync(model);
+
+        //await Task.Delay(2000);
+
+        if (response.IsSuccess)
+        {
+            strMessage = response.Message;
+            alertMessageEnum = AlertMessageEnum.Success;
+        }
+        else
+        {
+            strMessage = response.Errors.FirstOrDefault() ?? response.Message;
+
+            //strMessage = response.Message;
+            alertMessageEnum = AlertMessageEnum.Warning;
+        }
+
+
+        //Console.WriteLine("Hello");
+
+        isBusy = false;
+
+
+    }
+
+    private void GotoLogin()
+    {
+        navMan.NavigateTo("/auth/login");
+    }
+}

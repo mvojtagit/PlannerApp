@@ -1,0 +1,63 @@
+﻿@if (!string.IsNullOrWhiteSpace(Message))
+{
+    <div class="alert @strAlertClass">
+        <RadzenCard>
+            <p>@Message</p></RadzenCard>
+            <span @onclick="HideAlertMessage">X</span>
+
+
+</div>
+}
+
+
+
+
+
+
+@code {
+
+    private string strAlertClass = "alert-info";
+    private AlertMessageEnum messageType;
+
+
+    [Parameter]
+    public AlertMessageEnum MessageType
+    {
+        get=> MessageType;
+        set
+        {
+            messageType = value;
+
+            switch (messageType)
+            {
+                case (AlertMessageEnum.Error):
+                    {
+                        strAlertClass = "alert-danger";
+                        break;
+                    }
+                case (AlertMessageEnum.Success):
+                    {
+                        strAlertClass = "alert-success";
+                        break;
+                    }
+                case (AlertMessageEnum.Warning):
+                    {
+                        strAlertClass = "alert-warning";
+                        break;
+                    }
+            }
+        }
+    }
+
+
+
+    [Parameter]
+    public string Message {get; set;}
+
+
+    private void HideAlertMessage()
+    {
+        Message = string.Empty;
+      
+    }
+}
