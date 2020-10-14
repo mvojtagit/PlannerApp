@@ -14,7 +14,7 @@
         <EditForm Model="@model" OnValidSubmit="LoginUser">
             <RadzenCard>
                 <DataAnnotationsValidator />
-                <ValidationSummary />
+
 
                 <label>Email</label>
                 <RadzenTextBox @bind-Value="model.Email"></RadzenTextBox>
@@ -30,6 +30,7 @@
                               ButtonStyle="Radzen.ButtonStyle.Primary" class="btn-block mr-2"
                               Disabled=@isBusy Click="GotoRegister" />
 
+                <ValidationSummary />
 
             </RadzenCard>
         </EditForm>

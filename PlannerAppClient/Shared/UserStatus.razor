@@ -2,7 +2,7 @@
 @inject NavigationManager navMan
 
 <AuthorizeView>
-    <span>User @context.User.FindFirst("FirstName").Value </span>&nbsp;<RadzenButton Text="Logout" Click="Logout" class="mr-2"></RadzenButton>
+    <span>@context.User.FindFirst("FirstName").Value </span>&nbsp;<RadzenButton Text="Logout" Click="Logout" class="mr-2"></RadzenButton>
 </AuthorizeView>
 
 @code {
