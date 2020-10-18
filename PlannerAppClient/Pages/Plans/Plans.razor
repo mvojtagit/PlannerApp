@@ -1,0 +1,100 @@
+﻿@page "/plans"
+@page "/plans/{pagenumber}"
+
+@attribute [Authorize]
+
+@inject PlansService planService
+
+<h2>My Plans</h2>
+<div class="row">
+    <RadzenTextBox Placeholder="SerachQuery" />
+</div>
+<hr />
+
+@if (isBusy)
+{
+    <h2>Loading....</h2>
+}
+else if (plans.Count == 0)
+{
+    <h2>No plans to show...</h2>
+}
+else
+{
+    <div class="row">
+
+        @foreach (var item in plans)
+        {
+            <div class="col-4">
+                <RadzenCard>
+                    <img src="@item.CoverPath" style="height:100px;margin:5px" />
+                    <h2>@item.Title</h2>
+                    <p>@item.Description</p>
+                    <div class="row">
+                        <div class="col-6">
+                            <RadzenButton Text="Edit" ButtonStyle="Radzen.ButtonStyle.Success" class="btn-block"></RadzenButton>
+                        </div>
+                        <div class="col-6">
+                            <RadzenButton Text="Delete" ButtonStyle="Radzen.ButtonStyle.Danger" class="btn-block"></RadzenButton>
+                        </div>
+                    </div>
+                </RadzenCard>
+            </div>
+        }
+
+    </div>
+}
+
+
+
+<hr />
+
+@if (plans.Count > 0)
+{
+    <div class="row">
+        <RadzenButton Text="1" ButtonStyle="Radzen.ButtonStyle.Info" Style="margin:8px"></RadzenButton>
+    </div>
+}
+
+
+
+
+@code {
+    [Parameter]
+    public string PageNumber { get; set; }
+
+    [CascadingParameter]
+    public Task<AuthenticationState> authenticationState { get; set; }
+
+    private bool isBusy = true;
+
+    private List<Plan> plans = new List<Plan>();
+
+    private async Task GetAllPlansAsync()
+    {
+        isBusy = true;
+
+        var userState = authenticationState.Result;
+
+
+        if (PageNumber == null)
+        {
+            PageNumber = "1";
+        }
+
+        planService.AccessToken = userState.User.FindFirst("AccessToken").Value;
+
+        var response = await planService.GetAllPlansByPageAsync(int.Parse(PageNumber));
+
+        plans = response.Records.ToList();
+
+        isBusy = false;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetAllPlansAsync();
+
+    }
+
+}

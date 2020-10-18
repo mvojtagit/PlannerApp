@@ -30,9 +30,13 @@ namespace PlannerApp.Shared.Services
         /// </summary>
         /// <param name="iPage">broj stranice</param>
         /// <returns></returns>
-        public async Task<PlanCollectionPagingResponse> GetAllPlansByPage(int iPage)
+        public async Task<PlanCollectionPagingResponse> GetAllPlansByPageAsync(int iPage=1)
         {
-            var response = await _client.GetProtectedAsync<PlanCollectionPagingResponse>($"{_baseURL}/api/plans/page={iPage}");
+
+            string strBaseUrl = $"{_baseURL}/api/plans?page={iPage}";
+
+
+            var response = await _client.GetProtectedAsync<PlanCollectionPagingResponse>(strBaseUrl);
 
             return response.Result;
         }
@@ -45,7 +49,7 @@ namespace PlannerApp.Shared.Services
         /// <returns></returns>
         public async Task<PlanCollectionPagingResponse> SearchPlansByPage(string strQuery,int idPage=1)
         {
-            var response = await _client.GetProtectedAsync<PlanCollectionPagingResponse>($"{_baseURL}/api/plans/query={strQuery}?page={idPage}");
+            var response = await _client.GetProtectedAsync<PlanCollectionPagingResponse>($"{_baseURL}/api/plans?query={strQuery}?page={idPage}");
 
             return response.Result;
         }
