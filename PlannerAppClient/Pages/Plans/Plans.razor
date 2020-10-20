@@ -1,13 +1,22 @@
 ﻿@page "/plans"
-@page "/plans/{pagenumber}"
+@page "/plans/{pagenumber:int}"
 
 @attribute [Authorize]
 
 @inject PlansService planService
 
-<h2>My Plans</h2>
+
+@if (string.IsNullOrWhiteSpace(Query))
+{
+    <h2>My Plans Page: @PageNumber</h2>
+}
+else
+{
+    <h2>My Plans Results for: @Query - Page: @PageNumber</h2>
+}
+
 <div class="row">
-    <RadzenTextBox Placeholder="SerachQuery" />
+    <RadzenTextBox Placeholder="SerachQuery" @bind-Value="@Query" /><RadzenButton Text="Search" Click="async ()=> await GetAllPlansAsync()"></RadzenButton>
 </div>
 <hr />
 
@@ -27,7 +36,7 @@ else
         {
             <div class="col-4">
                 <RadzenCard>
-                    <img src="@item.CoverPath" style="height:100px;margin:5px" />
+                    <img src="@item.CoverPath" style="width:90%;margin:5px" />
                     <h2>@item.Title</h2>
                     <p>@item.Description</p>
                     <div class="row">
@@ -52,7 +61,22 @@ else
 @if (plans.Count > 0)
 {
     <div class="row">
-        <RadzenButton Text="1" ButtonStyle="Radzen.ButtonStyle.Info" Style="margin:8px"></RadzenButton>
+
+        @for (int i = 1; i <= iTotalPages; i++)
+        {
+            int iPage = i;
+
+            if (iPage == PageNumber)
+            {
+                <RadzenButton Text="@i.ToString()" ButtonStyle="Radzen.ButtonStyle.Info" Click="async () => await GetPageAsync(iPage)" Style="margin:8px" Disabled="true"></RadzenButton>
+            }
+            else
+            {
+                <RadzenButton Text="@i.ToString()" ButtonStyle="Radzen.ButtonStyle.Info" Click="async () => await GetPageAsync(iPage)" Style="margin:8px"></RadzenButton>
+            }
+
+        }
+
     </div>
 }
 
@@ -61,7 +85,10 @@ else
 
 @code {
     [Parameter]
-    public string PageNumber { get; set; }
+    public int? PageNumber { get; set; }
+
+    [Parameter]
+    public string Query { get; set; }
 
     [CascadingParameter]
     public Task<AuthenticationState> authenticationState { get; set; }
@@ -69,6 +96,8 @@ else
     private bool isBusy = true;
 
     private List<Plan> plans = new List<Plan>();
+
+    private int iTotalPages = 1;
 
     private async Task GetAllPlansAsync()
     {
@@ -79,16 +108,42 @@ else
 
         if (PageNumber == null)
         {
-            PageNumber = "1";
+            PageNumber = 1;
         }
 
         planService.AccessToken = userState.User.FindFirst("AccessToken").Value;
 
-        var response = await planService.GetAllPlansByPageAsync(int.Parse(PageNumber));
+        PlanCollectionPagingResponse response;
+
+        if (string.IsNullOrWhiteSpace(Query))
+        {
+            response = await planService.GetAllPlansByPageAsync(PageNumber);
+        }
+        else
+        {
+            response = await planService.SearchPlansByPage(Query, PageNumber);
+        }
+
+
+
+        if (response.Count % response.PageSize == 0)
+        {
+            iTotalPages = (response.Count / response.PageSize);
+        }
+        else
+        {
+            iTotalPages = (response.Count / response.PageSize) + 1;
+        }
 
         plans = response.Records.ToList();
 
         isBusy = false;
+    }
+
+    private async Task GetPageAsync(int iPage)
+    {
+        PageNumber = iPage;
+        await GetAllPlansAsync();
     }
 
     protected override async Task OnInitializedAsync()

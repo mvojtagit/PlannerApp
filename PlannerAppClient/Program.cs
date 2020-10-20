@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using PlannerApp.Shared.Services;
 using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components.Authorization;
+using Tewr.Blazor.FileReader;
 
 namespace PlannerAppClient
 {
@@ -18,7 +19,7 @@ namespace PlannerAppClient
 
         //https://plannerappserver20200228091432.azurewebsites.net/
 
-        private const string url = "https://plannerappserver20200228091432.azurewebsites.net/";
+        private const string url = "https://plannerappserver20200228091432.azurewebsites.net";
         public static async Task Main(string[] args)
         {
             var builder = WebAssemblyHostBuilder.CreateDefault(args);
@@ -28,6 +29,11 @@ namespace PlannerAppClient
             //auth NuGet Ms.AspNetCore.Comp.Auth
             builder.Services.AddOptions();
             builder.Services.AddAuthorizationCore();
+            builder.Services.AddFileReaderService(options => 
+            {
+                options.UseWasmSharedBuffer = true;
+                
+             });
 
             builder.Services.AddScoped<AuthenticationStateProvider, LocalAuthenticationStateProvider>();
             builder.Services.AddScoped<AuthenticationService>(x =>

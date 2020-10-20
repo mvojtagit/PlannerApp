@@ -1,4 +1,5 @@
 ﻿using AKSoftware.WebApi.Client;
+using PlannerApp.Shared.Models;
 using PlannerAppClient.Models;
 using System;
 using System.Collections.Generic;
@@ -30,7 +31,7 @@ namespace PlannerApp.Shared.Services
         /// </summary>
         /// <param name="iPage">broj stranice</param>
         /// <returns></returns>
-        public async Task<PlanCollectionPagingResponse> GetAllPlansByPageAsync(int iPage=1)
+        public async Task<PlanCollectionPagingResponse> GetAllPlansByPageAsync(int? iPage=1)
         {
 
             string strBaseUrl = $"{_baseURL}/api/plans?page={iPage}";
@@ -42,14 +43,28 @@ namespace PlannerApp.Shared.Services
         }
 
         /// <summary>
-        /// 
+        /// Search plans
         /// </summary>
         /// <param name="idPage"></param>
         /// <param name="strQuery"></param>
         /// <returns></returns>
-        public async Task<PlanCollectionPagingResponse> SearchPlansByPage(string strQuery,int idPage=1)
+        public async Task<PlanCollectionPagingResponse> SearchPlansByPage(string strQuery,int? idPage=1)
         {
-            var response = await _client.GetProtectedAsync<PlanCollectionPagingResponse>($"{_baseURL}/api/plans?query={strQuery}?page={idPage}");
+            var response = await _client.GetProtectedAsync<PlanCollectionPagingResponse>($"{_baseURL}/api/plans/search?query={strQuery}&page={idPage}");
+
+            return response.Result;
+        }
+        /// <summary>
+        /// Post plan to DB
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
+        public async Task<PlanSingleResponse> PostPlanAsync(PlanRequest model)
+        {
+            var response = await _client.SendFormProtectedAsync<PlanSingleResponse>($"{_baseURL}/api/plans", ActionType.POST,
+                new StringFormKeyValue("Title", model.Title),
+                new StringFormKeyValue("Description", model.Description),
+                new FileFormKeyValue("CoverFile", model.CoverFile, model.FileName));
 
             return response.Result;
         }
