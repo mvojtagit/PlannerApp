@@ -3,8 +3,9 @@
 
 @attribute [Authorize]
 
-@inject PlansService planService
 
+@inject PlansService planService
+@inject NavigationManager navMan
 
 @if (string.IsNullOrWhiteSpace(Query))
 {
@@ -41,7 +42,7 @@ else
                     <p>@item.Description</p>
                     <div class="row">
                         <div class="col-6">
-                            <RadzenButton Text="Edit" ButtonStyle="Radzen.ButtonStyle.Success" class="btn-block"></RadzenButton>
+                            <RadzenButton Text="Edit" ButtonStyle="Radzen.ButtonStyle.Success" class="btn-block" Click="()=>NavigateToPlanById(item.Id)"></RadzenButton>
                         </div>
                         <div class="col-6">
                             <RadzenButton Text="Delete" ButtonStyle="Radzen.ButtonStyle.Danger" class="btn-block"></RadzenButton>
@@ -75,7 +76,7 @@ else
                 <RadzenButton Text="@i.ToString()" ButtonStyle="Radzen.ButtonStyle.Info" Click="async () => await GetPageAsync(iPage)" Style="margin:8px"></RadzenButton>
             }
 
-        }
+        }>
 
     </div>
 }
@@ -121,7 +122,7 @@ else
         }
         else
         {
-            response = await planService.SearchPlansByPage(Query, PageNumber);
+            response = await planService.SearchPlansByPageAsync(Query, PageNumber);
         }
 
 
@@ -150,6 +151,11 @@ else
     {
         await GetAllPlansAsync();
 
+    }
+
+    private void NavigateToPlanById(string strId)
+    {
+        navMan.NavigateTo($"/plans/details/{strId}");
     }
 
 }

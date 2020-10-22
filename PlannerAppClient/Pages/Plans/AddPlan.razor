@@ -3,28 +3,106 @@
 @attribute [Authorize]
 @inject PlansService planService
 @inject NavigationManager navMan
-@inject IFileReaderService iFilereadeService
+@inject IFileReaderService filereadeService
 
 
 <h3>Add new Plan</h3>
+
+@if (isBusy)
+{
+    <h2>Loading....</h2>
+}
+
 <div calss="row">
     <div class="col-6">
-        <EditForm Model="planRequest">
+        <AlertMessage Message=@strMessage MessageType=@alertMessageEnum></AlertMessage>
+        <EditForm Model="planRequest" OnValidSubmit="async ()=> await AddNewPlanAsync()">
             <RadzenCard>
                 <DataAnnotationsValidator />
                 <ValidationSummary />
-                <RadzenTextBox Placeholder="Title" Style="margin:10px"/>
-                <Radzen.Blazor.RadzenTextArea Placeholder="Description" Style="margin:10px"/>
-                <input type="file" style="margin:10px"/>
-                <img style="width:100%;margin:10px" />
+                <RadzenTextBox Placeholder="Title" Style="margin:10px" @bind-Value="planRequest.Title" />
+                <Radzen.Blazor.RadzenTextArea Placeholder="Description" Style="margin:10px" @bind-Value="planRequest.Description" />
+                <input type="file" style="margin:10px" @ref="elementReference" @onchange="async ()=> await ChooseFileAsync()" />
+                <img style="width:100%;margin:10px" src="@strImageContentBase64" />
                 <hr />
-                <RadzenButton ButtonStyle="Radzen.ButtonStyle.Success" Style="margin:5px" class="btn btn-block" Text="Insert" />
+                <RadzenButton ButtonType="Radzen.ButtonType.Submit"
+                              ButtonStyle="Radzen.ButtonStyle.Success"
+                              Style="margin:5px" class="btn btn-block"
+                              Disabled="isBusy"
+                              Text="Insert" />
             </RadzenCard>
         </EditForm>
     </div>
 </div>
 
 @code {
+    [CascadingParameter]
+    public Task<AuthenticationState> authenticationState { get; set; }
+
+
     private PlanRequest planRequest = new PlanRequest();
+    private System.IO.Stream fileStream = null;
+    private string strImageContentBase64 = string.Empty;
+    private string strFileName = string.Empty;
+
+    private string strMessage = string.Empty;
+    private AlertMessageEnum alertMessageEnum = AlertMessageEnum.Success;
+
+    ElementReference elementReference;
+
+    private bool isBusy;
+
+    private async Task ChooseFileAsync()
+    {
+        var file = (await filereadeService.CreateReference(elementReference).EnumerateFilesAsync()).FirstOrDefault();
+
+        var fileInfo = await file.ReadFileInfoAsync();
+
+        string extension = System.IO.Path.GetExtension(fileInfo.Name);
+
+        var alowedExtension = new string[] { ".jpg", ".png", ".bmp" };
+        if (!alowedExtension.Contains(extension.ToLower()))
+        {
+            //not allowed
+            strMessage = "Not allowed extension.";
+            alertMessageEnum = AlertMessageEnum.Warning;
+            return;
+        }
+
+        using (var memoryStream = await file.CreateMemoryStreamAsync())
+        {
+            fileStream = new System.IO.MemoryStream(memoryStream.ToArray());
+            strImageContentBase64 = $"data:{fileInfo.Type}; base64,{Convert.ToBase64String(memoryStream.ToArray())}";
+            strFileName = fileInfo.Name;
+
+        }
+    }
+
+    private async Task AddNewPlanAsync()
+    {
+
+        isBusy = true;
+
+        var userState = authenticationState.Result;
+        planService.AccessToken = userState.User.FindFirst("AccessToken").Value;
+
+        planRequest.FileName = strFileName;
+        planRequest.CoverFile = fileStream;
+
+        var result = await planService.PostPlanAsync(planRequest);
+
+        if (result.IsSuccess)
+        {
+            navMan.NavigateTo("/plans");
+        }
+        else
+        {
+            strMessage = result.Message;
+            alertMessageEnum = AlertMessageEnum.Error;
+        }
+
+        isBusy = false;
+    }
+
 
 }

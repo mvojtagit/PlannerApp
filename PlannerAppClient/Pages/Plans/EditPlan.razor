@@ -1,0 +1,151 @@
+﻿@page "/plans/details/{id}"
+
+@attribute [Authorize]
+@inject PlansService planService
+@inject NavigationManager navMan
+@inject IFileReaderService filereadeService
+
+
+<h3>Plan: @planRequest.Title</h3>
+
+@if (isBusy)
+{
+    <h2>Loading....</h2>
+}
+<div class="container">
+    <div class="row">
+        <div class="col-6">
+            <AlertMessage Message=@strMessage MessageType=@alertMessageEnum></AlertMessage>
+
+            <EditForm Model="planRequest" OnValidSubmit="async ()=> await EditPlanAsync()">
+                <RadzenCard>
+                    <DataAnnotationsValidator />
+
+                    <RadzenTextBox Placeholder="Title" Style="margin:10px" @bind-Value="planRequest.Title" />
+                    <Radzen.Blazor.RadzenTextArea Placeholder="Description" Style="margin:10px" @bind-Value="planRequest.Description" />
+                    <input type="file" style="margin:10px" @ref="elementReference" @onchange="async ()=> await ChooseFileAsync()" />
+                    <img style="width:100%;margin:10px" src="@strImageContentBase64" />
+                    <hr />
+                    <RadzenButton ButtonType="Radzen.ButtonType.Submit"
+                                  ButtonStyle="Radzen.ButtonStyle.Success"
+                                  Style="margin:5px" class="btn btn-block"
+                                  Disabled="isBusy"
+                                  Text="Update" />
+                    <ValidationSummary />
+                </RadzenCard>
+            </EditForm>
+        </div>
+        <div class="col-6">
+            <RadzenCard>ToDo Items 2</RadzenCard>
+        </div>
+    </div>
+</div>
+
+
+   
+
+    @code {
+
+        [Parameter]
+        public string Id { get; set; }
+
+        [CascadingParameter]
+        public Task<AuthenticationState> authenticationState { get; set; }
+
+
+        private PlanRequest planRequest = new PlanRequest();
+        private System.IO.Stream fileStream = null;
+        private string strImageContentBase64 = string.Empty;
+        private string strFileName = string.Empty;
+
+        private string strMessage = string.Empty;
+        private AlertMessageEnum alertMessageEnum = AlertMessageEnum.Success;
+
+        ElementReference elementReference;
+
+        private bool isBusy;
+
+        private async Task ChooseFileAsync()
+        {
+            var file = (await filereadeService.CreateReference(elementReference).EnumerateFilesAsync()).FirstOrDefault();
+
+            var fileInfo = await file.ReadFileInfoAsync();
+
+            string extension = System.IO.Path.GetExtension(fileInfo.Name);
+
+            var alowedExtension = new string[] { ".jpg", ".png", ".bmp" };
+            if (!alowedExtension.Contains(extension.ToLower()))
+            {
+                //not allowed
+                strMessage = "Not allowed extension.";
+                alertMessageEnum = AlertMessageEnum.Warning;
+                return;
+            }
+
+            using (var memoryStream = await file.CreateMemoryStreamAsync())
+            {
+                fileStream = new System.IO.MemoryStream(memoryStream.ToArray());
+                strImageContentBase64 = $"data:{fileInfo.Type}; base64,{Convert.ToBase64String(memoryStream.ToArray())}";
+                strFileName = fileInfo.Name;
+
+            }
+        }
+
+        private async Task EditPlanAsync()
+        {
+
+            isBusy = true;
+
+
+
+            planRequest.FileName = strFileName;
+            planRequest.CoverFile = fileStream;
+
+            var result = await planService.EditPlanAsync(planRequest);
+
+            if (result.IsSuccess)
+            {
+                strMessage = "Plan edited sucessfully";
+                alertMessageEnum = AlertMessageEnum.Success;
+            }
+            else
+            {
+                strMessage = result.Message;
+                alertMessageEnum = AlertMessageEnum.Error;
+            }
+
+            isBusy = false;
+        }
+
+        private async Task GetPlanById()
+        {
+            isBusy = true;
+
+            var result = await planService.GetPlanByIdAsync(Id);
+
+            if (result.IsSuccess)
+            {
+                planRequest.Title = result.Record.Title;
+                planRequest.Description = result.Record.Description;
+                strImageContentBase64 = result.Record.CoverPath;
+                planRequest.Id = Id;
+
+            }
+            else
+            {
+                strMessage = result.Message;
+                alertMessageEnum = AlertMessageEnum.Error;
+            }
+            isBusy = false;
+        }
+
+        protected override async Task OnInitializedAsync()
+        {
+            var userState = authenticationState.Result;
+            planService.AccessToken = userState.User.FindFirst("AccessToken").Value;
+
+            await GetPlanById();
+        }
+
+
+    }

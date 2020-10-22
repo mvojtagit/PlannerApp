@@ -31,7 +31,7 @@ namespace PlannerApp.Shared.Services
         /// </summary>
         /// <param name="iPage">broj stranice</param>
         /// <returns></returns>
-        public async Task<PlanCollectionPagingResponse> GetAllPlansByPageAsync(int? iPage=1)
+        public async Task<PlanCollectionPagingResponse> GetAllPlansByPageAsync(int? iPage = 1)
         {
 
             string strBaseUrl = $"{_baseURL}/api/plans?page={iPage}";
@@ -48,7 +48,7 @@ namespace PlannerApp.Shared.Services
         /// <param name="idPage"></param>
         /// <param name="strQuery"></param>
         /// <returns></returns>
-        public async Task<PlanCollectionPagingResponse> SearchPlansByPage(string strQuery,int? idPage=1)
+        public async Task<PlanCollectionPagingResponse> SearchPlansByPageAsync(string strQuery, int? idPage = 1)
         {
             var response = await _client.GetProtectedAsync<PlanCollectionPagingResponse>($"{_baseURL}/api/plans/search?query={strQuery}&page={idPage}");
 
@@ -61,10 +61,59 @@ namespace PlannerApp.Shared.Services
         /// <returns></returns>
         public async Task<PlanSingleResponse> PostPlanAsync(PlanRequest model)
         {
-            var response = await _client.SendFormProtectedAsync<PlanSingleResponse>($"{_baseURL}/api/plans", ActionType.POST,
+            var formKeyValuesList = new List<FormKeyValue>()
+            {
+                
                 new StringFormKeyValue("Title", model.Title),
                 new StringFormKeyValue("Description", model.Description),
-                new FileFormKeyValue("CoverFile", model.CoverFile, model.FileName));
+            };
+
+            if (model.CoverFile != null)
+            {
+                formKeyValuesList.Add(new FileFormKeyValue("CoverFile", model.CoverFile, model.FileName));
+            }
+
+            var response = await _client.SendFormProtectedAsync<PlanSingleResponse>($"{_baseURL}/api/plans", ActionType.POST, formKeyValuesList.ToArray());
+
+            return response.Result;
+        }
+
+        /// <summary>
+        /// Svi planovi byPage
+        /// </summary>
+        /// <param name="iPage">broj stranice</param>
+        /// <returns></returns>
+        public async Task<PlanSingleResponse> GetPlanByIdAsync(string strId)
+        {
+
+            string strBaseUrl = $"{_baseURL}/api/plans/{strId}";
+
+
+            var response = await _client.GetProtectedAsync<PlanSingleResponse>(strBaseUrl);
+
+            return response.Result;
+        }
+
+        /// <summary>
+        /// Edit plan to API
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
+        public async Task<PlanSingleResponse> EditPlanAsync(PlanRequest model)
+        {
+            var formKeyValuesList = new List<FormKeyValue>()
+            {
+                new StringFormKeyValue("Id", model.Id),
+                new StringFormKeyValue("Title", model.Title),
+                new StringFormKeyValue("Description", model.Description),
+            };
+
+            if(model.CoverFile != null)
+            {
+                formKeyValuesList.Add(new FileFormKeyValue("CoverFile", model.CoverFile, model.FileName));
+            }
+
+            var response = await _client.SendFormProtectedAsync<PlanSingleResponse>($"{_baseURL}/api/plans", ActionType.PUT, formKeyValuesList.ToArray());
 
             return response.Result;
         }

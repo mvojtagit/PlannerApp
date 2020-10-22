@@ -1,12 +1,13 @@
 ﻿@if (!string.IsNullOrWhiteSpace(Message))
 {
     <div class="alert @strAlertClass">
-        <RadzenCard>
-            <p>@Message</p></RadzenCard>
-            <span @onclick="HideAlertMessage">X</span>
+
+        <p>@Message</p>
+
+        <span @onclick="HideAlertMessage">X</span>
 
 
-</div>
+    </div>
 }
 
 
@@ -23,7 +24,7 @@
     [Parameter]
     public AlertMessageEnum MessageType
     {
-        get=> MessageType;
+        get => MessageType;
         set
         {
             messageType = value;
@@ -52,12 +53,12 @@
 
 
     [Parameter]
-    public string Message {get; set;}
+    public string Message { get; set; }
 
 
     private void HideAlertMessage()
     {
         Message = string.Empty;
-      
+
     }
 }
