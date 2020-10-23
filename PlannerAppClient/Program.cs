@@ -46,6 +46,11 @@ namespace PlannerAppClient
                 return new PlansService(url);
             });
 
+            builder.Services.AddScoped<ToDoItemsService>(x =>
+            {
+                return new ToDoItemsService(url);
+            });
+
             builder.RootComponents.Add<App>("app");
 
             await builder.Build().RunAsync();

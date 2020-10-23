@@ -40,14 +40,28 @@ else
                     <img src="@item.CoverPath" style="width:90%;margin:5px" />
                     <h2>@item.Title</h2>
                     <p>@item.Description</p>
+                    <hr />
                     <div class="row">
                         <div class="col-6">
                             <RadzenButton Text="Edit" ButtonStyle="Radzen.ButtonStyle.Success" class="btn-block" Click="()=>NavigateToPlanById(item.Id)"></RadzenButton>
                         </div>
                         <div class="col-6">
-                            <RadzenButton Text="Delete" ButtonStyle="Radzen.ButtonStyle.Danger" class="btn-block"></RadzenButton>
+                            <RadzenButton Text="Delete" ButtonStyle="Radzen.ButtonStyle.Danger" class="btn-block" Click="()=>SelectPlan(item.Id)"></RadzenButton>
                         </div>
                     </div>
+                    @if (strSelectedPlanId == item.Id)
+                    {
+                        <div class="row">
+                            <div class="col-12">
+                                <RadzenButton Text="Confirm" 
+                                              ButtonStyle="Radzen.ButtonStyle.Danger" 
+                                              Click="async ()=> await DeletePlanByIdAsync(item.Id)"
+                                              class="btn-block" Style="margin:5px"></RadzenButton>
+                            </div>
+
+                        </div>
+                    }
+
                 </RadzenCard>
             </div>
         }
@@ -76,7 +90,7 @@ else
                 <RadzenButton Text="@i.ToString()" ButtonStyle="Radzen.ButtonStyle.Info" Click="async () => await GetPageAsync(iPage)" Style="margin:8px"></RadzenButton>
             }
 
-        }>
+        }
 
     </div>
 }
@@ -93,6 +107,8 @@ else
 
     [CascadingParameter]
     public Task<AuthenticationState> authenticationState { get; set; }
+
+    string strSelectedPlanId = string.Empty;
 
     private bool isBusy = true;
 
@@ -153,9 +169,36 @@ else
 
     }
 
+    private void SelectPlan(string strId)
+    {
+        strSelectedPlanId = strId;
+    }
+
+
     private void NavigateToPlanById(string strId)
     {
         navMan.NavigateTo($"/plans/details/{strId}");
     }
+
+    private async Task DeletePlanByIdAsync(string strID)
+    {
+        isBusy = true;
+
+        var response = await planService.DeletePlanByIdAsync(strID);
+
+        if (response.IsSuccess)
+        {
+            var deletedPlan = plans.SingleOrDefault(p => p.Id == strSelectedPlanId);
+            plans.Remove(deletedPlan);
+        }
+        else
+        {
+            await GetAllPlansAsync();
+        }
+
+        isBusy = false;
+
+    }
+
 
 }

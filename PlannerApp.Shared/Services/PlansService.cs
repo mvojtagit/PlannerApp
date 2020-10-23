@@ -8,24 +8,13 @@ using System.Threading.Tasks;
 
 namespace PlannerApp.Shared.Services
 {
-    public class PlansService
+    public class PlansService : ServicesBase
     {
-        private readonly string _baseURL;
+ 
+        public PlansService(string strBaseUrl) : base(strBaseUrl) { }
+       
 
-        private ServiceClient _client = new ServiceClient();
-        public PlansService(string strBaseUrl)
-        {
-            _baseURL = strBaseUrl;
-        }
-
-        public string AccessToken
-        {
-            get => _client.AccessToken;
-            set
-            {
-                _client.AccessToken = value;
-            }
-        }
+  
         /// <summary>
         /// Svi planovi byPage
         /// </summary>
@@ -35,7 +24,6 @@ namespace PlannerApp.Shared.Services
         {
 
             string strBaseUrl = $"{_baseURL}/api/plans?page={iPage}";
-
 
             var response = await _client.GetProtectedAsync<PlanCollectionPagingResponse>(strBaseUrl);
 
@@ -50,10 +38,11 @@ namespace PlannerApp.Shared.Services
         /// <returns></returns>
         public async Task<PlanCollectionPagingResponse> SearchPlansByPageAsync(string strQuery, int? idPage = 1)
         {
-            var response = await _client.GetProtectedAsync<PlanCollectionPagingResponse>($"{_baseURL}/api/plans/search?query={strQuery}&page={idPage}");
+            var response = await base._client.GetProtectedAsync<PlanCollectionPagingResponse>($"{base._baseURL}/api/plans/search?query={strQuery}&page={idPage}");
 
             return response.Result;
         }
+
         /// <summary>
         /// Post plan to DB
         /// </summary>
@@ -73,7 +62,7 @@ namespace PlannerApp.Shared.Services
                 formKeyValuesList.Add(new FileFormKeyValue("CoverFile", model.CoverFile, model.FileName));
             }
 
-            var response = await _client.SendFormProtectedAsync<PlanSingleResponse>($"{_baseURL}/api/plans", ActionType.POST, formKeyValuesList.ToArray());
+            var response = await base._client.SendFormProtectedAsync<PlanSingleResponse>($"{base._baseURL}/api/plans", ActionType.POST, formKeyValuesList.ToArray());
 
             return response.Result;
         }
@@ -86,10 +75,10 @@ namespace PlannerApp.Shared.Services
         public async Task<PlanSingleResponse> GetPlanByIdAsync(string strId)
         {
 
-            string strBaseUrl = $"{_baseURL}/api/plans/{strId}";
+            string strBaseUrl = $"{base._baseURL}/api/plans/{strId}";
 
 
-            var response = await _client.GetProtectedAsync<PlanSingleResponse>(strBaseUrl);
+            var response = await base._client.GetProtectedAsync<PlanSingleResponse>(strBaseUrl);
 
             return response.Result;
         }
@@ -113,7 +102,22 @@ namespace PlannerApp.Shared.Services
                 formKeyValuesList.Add(new FileFormKeyValue("CoverFile", model.CoverFile, model.FileName));
             }
 
-            var response = await _client.SendFormProtectedAsync<PlanSingleResponse>($"{_baseURL}/api/plans", ActionType.PUT, formKeyValuesList.ToArray());
+            var response = await base._client.SendFormProtectedAsync<PlanSingleResponse>($"{base._baseURL}/api/plans", ActionType.PUT, formKeyValuesList.ToArray());
+
+            return response.Result;
+        }
+
+        /// <summary>
+        /// Svi planovi byPage
+        /// </summary>
+        /// <param name="iPage">broj stranice</param>
+        /// <returns></returns>
+        public async Task<PlanSingleResponse> DeletePlanByIdAsync(string strId)
+        {
+
+            string strBaseUrl = $"{base._baseURL}/api/plans/{strId}";
+
+            var response = await base._client.DeleteProtectedAsync<PlanSingleResponse>(strBaseUrl);
 
             return response.Result;
         }

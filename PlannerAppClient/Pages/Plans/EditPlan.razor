@@ -2,6 +2,7 @@
 
 @attribute [Authorize]
 @inject PlansService planService
+@inject ToDoItemsService toDoItemsService
 @inject NavigationManager navMan
 @inject IFileReaderService filereadeService
 
@@ -17,13 +18,13 @@
         <div class="col-6">
             <AlertMessage Message=@strMessage MessageType=@alertMessageEnum></AlertMessage>
 
-            <EditForm Model="planRequest" OnValidSubmit="async ()=> await EditPlanAsync()">
+            <EditForm Model="planRequest" OnValidSubmit="async () => await EditPlanAsync()">
                 <RadzenCard>
                     <DataAnnotationsValidator />
 
                     <RadzenTextBox Placeholder="Title" Style="margin:10px" @bind-Value="planRequest.Title" />
                     <Radzen.Blazor.RadzenTextArea Placeholder="Description" Style="margin:10px" @bind-Value="planRequest.Description" />
-                    <input type="file" style="margin:10px" @ref="elementReference" @onchange="async ()=> await ChooseFileAsync()" />
+                    <input type="file" style="margin:10px" @ref="elementReference" @onchange="async () => await ChooseFileAsync()" />
                     <img style="width:100%;margin:10px" src="@strImageContentBase64" />
                     <hr />
                     <RadzenButton ButtonType="Radzen.ButtonType.Submit"
@@ -36,116 +37,196 @@
             </EditForm>
         </div>
         <div class="col-6">
-            <RadzenCard>ToDo Items 2</RadzenCard>
+            <RadzenCard>
+                <h2>Plan's items</h2>
+                <EditForm Model="toDoItemModel" OnValidSubmit="async () => await SubmitFormAsync()">
+                    <DataAnnotationsValidator />
+                    <table>
+                        <tr>
+                            <td>
+                                <RadzenButton Text="*" ButtonStyle="Radzen.ButtonStyle.Secondary" ButtonType="Radzen.ButtonType.Button" />
+                            </td>
+                            <td>
+                                <RadzenTextBox Placeholder="Item description..." @bind-Value="toDoItemModel.Description" />
+                            </td>
+                            <td>
+                                <RadzenButton Text="Submit" ButtonType="Radzen.ButtonType.Submit" ButtonStyle="Radzen.ButtonStyle.Primary" />
+                            </td>
+                        </tr>
+                    </table>
+
+                    <ValidationSummary />
+                </EditForm>
+                <table>
+
+
+                    @foreach (var item in toDoItemList)
+                    {
+                        <tr>
+                            <td>
+                                <RadzenCheckBox Value="item.IsDone" />
+                            </td>
+                            <td>
+                                <span>@item.Description</span>
+                            </td>
+                            <td>
+                                <RadzenButton Text="Delete" ButtonType="Radzen.ButtonType.Button" ButtonStyle="Radzen.ButtonStyle.Danger" />
+                            </td>
+                        </tr>
+
+                    }
+                </table>
+            </RadzenCard>
         </div>
     </div>
 </div>
 
 
-   
-
-    @code {
-
-        [Parameter]
-        public string Id { get; set; }
-
-        [CascadingParameter]
-        public Task<AuthenticationState> authenticationState { get; set; }
 
 
-        private PlanRequest planRequest = new PlanRequest();
-        private System.IO.Stream fileStream = null;
-        private string strImageContentBase64 = string.Empty;
-        private string strFileName = string.Empty;
+@code {
 
-        private string strMessage = string.Empty;
-        private AlertMessageEnum alertMessageEnum = AlertMessageEnum.Success;
+    [Parameter]
+    public string Id { get; set; }
 
-        ElementReference elementReference;
+    [CascadingParameter]
+    public Task<AuthenticationState> authenticationState { get; set; }
 
-        private bool isBusy;
 
-        private async Task ChooseFileAsync()
+    private PlanRequest planRequest = new PlanRequest();
+    private ToDoItemRequest toDoItemModel = new ToDoItemRequest();
+    private List<ToDoItem> toDoItemList = new List<ToDoItem>();
+    private ToDoItem selectedTodoItem = null;
+
+    private System.IO.Stream fileStream = null;
+    private string strImageContentBase64 = string.Empty;
+    private string strFileName = string.Empty;
+
+    private string strMessage = string.Empty;
+    private AlertMessageEnum alertMessageEnum = AlertMessageEnum.Success;
+
+    ElementReference elementReference;
+
+    private bool isBusy;
+
+    private async Task ChooseFileAsync()
+    {
+        var file = (await filereadeService.CreateReference(elementReference).EnumerateFilesAsync()).FirstOrDefault();
+
+        var fileInfo = await file.ReadFileInfoAsync();
+
+        string extension = System.IO.Path.GetExtension(fileInfo.Name);
+
+        var alowedExtension = new string[] { ".jpg", ".png", ".bmp" };
+        if (!alowedExtension.Contains(extension.ToLower()))
         {
-            var file = (await filereadeService.CreateReference(elementReference).EnumerateFilesAsync()).FirstOrDefault();
-
-            var fileInfo = await file.ReadFileInfoAsync();
-
-            string extension = System.IO.Path.GetExtension(fileInfo.Name);
-
-            var alowedExtension = new string[] { ".jpg", ".png", ".bmp" };
-            if (!alowedExtension.Contains(extension.ToLower()))
-            {
-                //not allowed
-                strMessage = "Not allowed extension.";
-                alertMessageEnum = AlertMessageEnum.Warning;
-                return;
-            }
-
-            using (var memoryStream = await file.CreateMemoryStreamAsync())
-            {
-                fileStream = new System.IO.MemoryStream(memoryStream.ToArray());
-                strImageContentBase64 = $"data:{fileInfo.Type}; base64,{Convert.ToBase64String(memoryStream.ToArray())}";
-                strFileName = fileInfo.Name;
-
-            }
+            //not allowed
+            strMessage = "Not allowed extension.";
+            alertMessageEnum = AlertMessageEnum.Warning;
+            return;
         }
 
-        private async Task EditPlanAsync()
+        using (var memoryStream = await file.CreateMemoryStreamAsync())
         {
+            fileStream = new System.IO.MemoryStream(memoryStream.ToArray());
+            strImageContentBase64 = $"data:{fileInfo.Type}; base64,{Convert.ToBase64String(memoryStream.ToArray())}";
+            strFileName = fileInfo.Name;
 
-            isBusy = true;
+        }
+    }
+
+    private async Task EditPlanAsync()
+    {
+
+        isBusy = true;
 
 
 
-            planRequest.FileName = strFileName;
-            planRequest.CoverFile = fileStream;
+        planRequest.FileName = strFileName;
+        planRequest.CoverFile = fileStream;
 
-            var result = await planService.EditPlanAsync(planRequest);
+        var result = await planService.EditPlanAsync(planRequest);
 
-            if (result.IsSuccess)
-            {
-                strMessage = "Plan edited sucessfully";
-                alertMessageEnum = AlertMessageEnum.Success;
-            }
-            else
-            {
-                strMessage = result.Message;
-                alertMessageEnum = AlertMessageEnum.Error;
-            }
-
-            isBusy = false;
+        if (result.IsSuccess)
+        {
+            strMessage = "Plan edited sucessfully";
+            alertMessageEnum = AlertMessageEnum.Success;
+        }
+        else
+        {
+            strMessage = result.Message;
+            alertMessageEnum = AlertMessageEnum.Error;
         }
 
-        private async Task GetPlanById()
+        isBusy = false;
+    }
+
+    private async Task GetPlanById()
+    {
+        isBusy = true;
+
+        var result = await planService.GetPlanByIdAsync(Id);
+
+        if (result.IsSuccess)
         {
-            isBusy = true;
+            planRequest.Title = result.Record.Title;
+            planRequest.Description = result.Record.Description;
+            strImageContentBase64 = result.Record.CoverPath;
+            planRequest.Id = Id;
+            toDoItemList = result.Record.ToDoItems.ToList();
 
-            var result = await planService.GetPlanByIdAsync(Id);
+        }
+        else
+        {
+            strMessage = result.Message;
+            alertMessageEnum = AlertMessageEnum.Error;
+        }
+        isBusy = false;
+    }
 
-            if (result.IsSuccess)
-            {
-                planRequest.Title = result.Record.Title;
-                planRequest.Description = result.Record.Description;
-                strImageContentBase64 = result.Record.CoverPath;
-                planRequest.Id = Id;
+    protected override async Task OnInitializedAsync()
+    {
+        var userState = authenticationState.Result;
 
-            }
-            else
-            {
-                strMessage = result.Message;
-                alertMessageEnum = AlertMessageEnum.Error;
-            }
-            isBusy = false;
+        var accessToken = userState.User.FindFirst("AccessToken").Value;
+        planService.AccessToken = accessToken;
+        toDoItemsService.AccessToken = accessToken;
+
+        await GetPlanById();
+    }
+
+    private async Task AddNewItemAsync()
+    {
+
+        isBusy = true;
+
+        toDoItemModel.PlanId = Id;
+        var response = await toDoItemsService.CreateItemAsync(toDoItemModel);
+
+        if (response.IsSuccess)
+        {
+            toDoItemList.Add(response.Record);
+        }
+        else
+        {
+            //err
         }
 
-        protected override async Task OnInitializedAsync()
-        {
-            var userState = authenticationState.Result;
-            planService.AccessToken = userState.User.FindFirst("AccessToken").Value;
-
-            await GetPlanById();
-        }
+        isBusy = false;
 
 
     }
+
+    private async Task SubmitFormAsync()
+    {
+        if (selectedTodoItem == null)
+        {
+            //addNew
+            await AddNewItemAsync();
+        }
+        else
+        {
+            //update
+        }
+    }
+}
