@@ -23,7 +23,8 @@ else
 
 @if (isBusy)
 {
-    <h2>Loading....</h2>
+    <div class="loader"><img src="Loader.gif" /></div>
+
 }
 else if (plans.Count == 0)
 {
@@ -38,7 +39,7 @@ else
             <div class="col-4">
                 <RadzenCard>
                     <img src="@item.CoverPath" style="width:90%;margin:5px" />
-                    <h2>@item.Title</h2>
+                    <h2><a href="/plans/details/@item.Id">@item.Title</a></h2>
                     <p>@item.Description</p>
                     <hr />
                     <div class="row">
@@ -53,8 +54,8 @@ else
                     {
                         <div class="row">
                             <div class="col-12">
-                                <RadzenButton Text="Confirm" 
-                                              ButtonStyle="Radzen.ButtonStyle.Danger" 
+                                <RadzenButton Text="Confirm"
+                                              ButtonStyle="Radzen.ButtonStyle.Danger"
                                               Click="async ()=> await DeletePlanByIdAsync(item.Id)"
                                               class="btn-block" Style="margin:5px"></RadzenButton>
                             </div>

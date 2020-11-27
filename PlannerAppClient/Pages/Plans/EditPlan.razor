@@ -11,7 +11,7 @@
 
 @if (isBusy)
 {
-    <h2>Loading....</h2>
+    <div class="loader"><img src="Loader.gif" /></div>
 }
 <div class="container">
     <div class="row">
@@ -44,13 +44,20 @@
                     <table>
                         <tr>
                             <td>
-                                <RadzenButton Text="*" ButtonStyle="Radzen.ButtonStyle.Secondary" ButtonType="Radzen.ButtonType.Button" />
+                                <RadzenButton Text="*"
+                                              ButtonStyle="Radzen.ButtonStyle.Secondary"
+                                              ButtonType="Radzen.ButtonType.Button"
+                                              Disabled="isBusy" 
+                                              @onclick="ClearSelection"/>
                             </td>
                             <td>
                                 <RadzenTextBox Placeholder="Item description..." @bind-Value="toDoItemModel.Description" />
                             </td>
                             <td>
-                                <RadzenButton Text="Submit" ButtonType="Radzen.ButtonType.Submit" ButtonStyle="Radzen.ButtonStyle.Primary" />
+                                <RadzenButton Text="Submit"
+                                              ButtonType="Radzen.ButtonType.Submit"
+                                              ButtonStyle="Radzen.ButtonStyle.Primary"
+                                              Disabled="isBusy" />
                             </td>
                         </tr>
                     </table>
@@ -62,15 +69,23 @@
 
                     @foreach (var item in toDoItemList)
                     {
-                        <tr>
+
+                        string strDescriptionStyle = item.IsDone ? "text-decoration-line: line-through" : "text-decoration-line: none";
+                        string strRowStyle = selectedTodoItem == item ? "cursor:pointer;background:lightblue" :"cursor:pointer;background:white";
+                        <tr @onclick="()=>SelectItem(item)" style="@strRowStyle">
                             <td>
-                                <RadzenCheckBox Value="item.IsDone" />
+                                <RadzenCheckBox @bind-Value="item.IsDone"
+                                                @onclick="async ()=> await ToDoItemUpdateStatus(item.Id)"
+                                                Disabled="isBusy" />
                             </td>
                             <td>
-                                <span>@item.Description</span>
+                                <span style="@strDescriptionStyle">@item.Description</span>
                             </td>
                             <td>
-                                <RadzenButton Text="Delete" ButtonType="Radzen.ButtonType.Button" ButtonStyle="Radzen.ButtonStyle.Danger" />
+                                <RadzenButton Text="Delete"
+                                              ButtonType="Radzen.ButtonType.Button"
+                                              ButtonStyle="Radzen.ButtonStyle.Danger" 
+                                              Click="async ()=> await RemoveItemAsync(item)"/>
                             </td>
                         </tr>
 
@@ -213,8 +228,26 @@
         }
 
         isBusy = false;
+    }
 
+    private async Task EditItemAsync()
+    {
 
+        isBusy = true;
+
+        toDoItemModel.PlanId = Id;
+        var response = await toDoItemsService.EditItemAsync(toDoItemModel);
+
+        if (response.IsSuccess)
+        {
+            var editItem = response.Record;
+        }
+        else
+        {
+            //err
+        }
+
+        isBusy = false;
     }
 
     private async Task SubmitFormAsync()
@@ -227,6 +260,64 @@
         else
         {
             //update
+            await EditItemAsync();
         }
+
+        toDoItemModel.Description = string.Empty;
+    }
+
+    private async Task ToDoItemUpdateStatus(string strItemId)
+    {
+
+        isBusy = true;
+
+        toDoItemModel.PlanId = Id;
+        var response = await toDoItemsService.ChangeItemStateAsync(strItemId);
+
+        if (response.IsSuccess)
+        {
+            //toDoItemList.Add(response.Record);
+        }
+        else
+        {
+            //err
+        }
+
+        isBusy = false;
+    }
+
+    private void SelectItem(ToDoItem item)
+    {
+        selectedTodoItem = item;
+        toDoItemModel.Id = item.Id;
+        toDoItemModel.Description = item.Description;
+    }
+
+    private void ClearSelection()
+    {
+        selectedTodoItem = null;
+
+        toDoItemModel.Id = null;
+        toDoItemModel.Description = null;
+    }
+
+    private async Task RemoveItemAsync(ToDoItem toDoItem)
+    {
+        isBusy = true;
+
+        toDoItemModel.PlanId = Id;
+        var response = await toDoItemsService.DeleteItemByIdAsync(toDoItem.Id);
+
+        if (response.IsSuccess)
+        {
+            toDoItemList.Remove(toDoItem);
+            selectedTodoItem = null;
+        }
+        else
+        {
+            //err
+        }
+
+        isBusy = false;
     }
 }

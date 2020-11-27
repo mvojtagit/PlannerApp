@@ -43,7 +43,7 @@ namespace PlannerApp.Shared.Services
         /// </summary>
         /// <param name="strId">Item ID</param>
         /// <returns></returns>
-        public async Task<ToDoItemSingleResponse> ChangeItemAsync(string strId)
+        public async Task<ToDoItemSingleResponse> ChangeItemStateAsync(string strId)
         {
             string strBaseUrl = $"{base._baseURL}/api/todoitems/{strId}";
             var response = await base._client.PutProtectedAsync<ToDoItemSingleResponse>(strBaseUrl, null);

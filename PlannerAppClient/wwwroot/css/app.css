@@ -126,6 +126,15 @@ app {
     border-radius:20px;
 }
 
+.loader {
+    position: fixed;
+    background-color: #fff;
+    text-align: center;
+    width: 40%;
+    right: 0;
+    margin-right: 30%;
+}
+
 #blazor-error-ui {
     background: lightyellow;
     bottom: 0;
